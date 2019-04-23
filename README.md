@@ -6,6 +6,20 @@ KubeBackup accessing the kubernetes API from inside a containter. Inside that co
 
 ## Setup
 You must edit `secret.yaml` (remember to `base64` the values) to reflect your S3 details.
+Example (Note these values are fake and do not work):
+```
+apiVersion: v1
+data:
+  BUCKET: dGVzdGJ1Y2tldA==
+  KEY: SSBhbSBhIHRlc3QgYWNjZXNzIGtleQ==
+  REGION: dXMtZWFzdC0x
+  SECRET: SSBhbSBhIHRlc3Qgc2VjcmV0IGtleQ==
+kind: Secret
+metadata:
+  name: s3creds
+type: Opaque
+```
+
 You can also edit the setting `CRON_SCHEDULE` if you want to change when the backup happens. Note: It uses the standard crontab formate.
 
 ## Deploy
