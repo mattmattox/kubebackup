@@ -6,6 +6,7 @@ KubeBackup accessing the kubernetes API from inside a containter. Inside that co
 
 ## Setup
 You must edit `secret.yaml` (remember to `base64` the values) to reflect your S3 details.
+
 Example (Note these values are fake and do not work):
 ```
 apiVersion: v1
