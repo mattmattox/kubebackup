@@ -21,8 +21,8 @@ spec:
     spec:
       serviceAccountName: kube-backup
       containers:
-        - name: drain
-          image: cube8021/kube-backup:v1.7
+        - name: kube-backup
+          image: cube8021/kube-backup
           env:
             - name: CRON_SCHEDULE
               value: '00 00 * * *'

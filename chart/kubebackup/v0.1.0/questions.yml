@@ -1,0 +1,73 @@
+labels:
+  io.cattle.role: cluster # options are cluster/project
+  io.rancher.app_min_version: 7.3.8
+categories:
+- Backup
+questions:
+- variable: defaultImage
+  default: true
+  description: "Use default Docker image"
+  label: Use Default Image
+  type: boolean
+  show_subquestion_if: false
+  group: "Container Images"
+  subquestions:
+  - variable: image.repository
+    default: "cube8021/kubebackup"
+    description: "KubeBackup image name"
+    type: string
+    label: KubeBackup Image Name
+  - variable: image.tag
+    default: "v0.8"
+    description: "KubeBackup image tag"
+    type: string
+    label: Image Tag
+- variable: access_key
+  default: ""
+  description: "S3 Access Key"
+  type: string
+  required: true
+  label: Access Key
+  group: "S3"
+- variable: secret_key
+  default: ""
+  description: "S3 Secret Key"
+  type: password
+  required: true
+  label: Secret Key
+  group: "S3"
+- variable: bucket_name
+  default: ""
+  description: "S3 Bucket Name"
+  type: string
+  required: true
+  label: Bucket Name
+  group: "S3"
+- variable: folder
+  default: ""
+  description: "S3 folder"
+  type: string
+  required: true
+  label: Folder
+  group: "S3"
+- variable: endpoint
+  default: "s3.us-east-1.amazonaws.com"
+  description: "S3 Endpoint"
+  type: string
+  required: true
+  label: Endpoint
+  group: "S3"
+- variable: region
+  default: "us-east-1"
+  description: "S3 Region"
+  type: string
+  required: true
+  label: region
+  group: "S3"
+- variable: cron_schedule
+  default: "00 00 * * *"
+  description: "Cronjob Schedule"
+  type: string
+  required: false
+  label: cron_schedule
+  group: "Cron"
