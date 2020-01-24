@@ -1,0 +1,55 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-backup
+  namespace: "kube-backup"
+  labels:
+    app: kube-backup
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kube-backup
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: kube-backup
+      annotations:
+    spec:
+      serviceAccountName: kube-backup
+      containers:
+        - name: drain
+          image: cube8021/kube-backup:v1.7
+          env:
+            - name: CRON_SCHEDULE
+              value: '00 00 * * *'
+            - name: REGION
+              valueFrom:
+                secretKeyRef:
+                  key: REGION
+                  name: s3creds
+                  optional: false
+            - name: BUCKET
+              valueFrom:
+                secretKeyRef:
+                  key: BUCKET
+                  name: s3creds
+                  optional: false
+            - name: KEY
+              valueFrom:
+                secretKeyRef:
+                  key: KEY
+                  name: s3creds
+                  optional: false
+            - name: SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: SECRET
+                  name: s3creds
+                  optional: false
+        - name: kube-backup
+          image: "cube8021/kubebackup:latest"
+          imagePullPolicy: IfNotPresent
