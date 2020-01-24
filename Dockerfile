@@ -1,4 +1,4 @@
-FROM alpine:3.3
+FROM alpine:3.9
 MAINTAINER Matthew Mattox - matthew.mattox@rancher.com
 
 ##Install python and awscli
