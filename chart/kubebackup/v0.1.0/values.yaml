@@ -82,3 +82,5 @@ affinity: {}
 podAnnotations: {}
 ## Prometheus Exporter / Metrics
 ##
+
+namespace: kube-backup

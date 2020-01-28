@@ -1,0 +1,40 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: {{ template "kubebackup.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: "{{ template "kubebackup.name" . }}"
+    chart: "{{ template "kubebackup.chart" . }}"
+    release: {{ .Release.Name | quote }}
+    heritage: {{ .Release.Service | quote }}
+rules:
+  - apiGroups:
+    - ''
+    resources:
+    - ''
+    verbs:
+    - ''
+    - get
+    - list
+
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "kubebackup.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: "{{ template "kubebackup.name" . }}"
+    chart: "{{ template "kubebackup.chart" . }}"
+    release: {{ .Release.Name | quote }}
+    heritage: {{ .Release.Service | quote }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: drain-node-on-crash
+subjects:
+  - name: {{ template "kubebackup.name" . }}
+    namespace: {{ .Release.Namespace }}
+    kind: ServiceAccount

@@ -1,16 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "kubebackup.fullname" . }}
+  name: {{ template "kubebackup.name" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
-    app: "{{ template "kubebackup.fullname" . }}"
+    app: "{{ template "kubebackup.name" . }}"
     chart: "{{ template "kubebackup.chart" . }}"
     release: {{ .Release.Name | quote }}
     heritage: {{ .Release.Service | quote }}
 spec:
   selector:
     matchLabels:
-      app: "{{ template "kubebackup.fullname" . }}"
+      app: "{{ template "kubebackup.name" . }}"
       release: {{ .Release.Name | quote }}
   {{- if .Values.updateStrategy }}
   strategy: {{ toYaml .Values.updateStrategy | nindent 4 }}
@@ -19,23 +20,14 @@ spec:
   template:
     metadata:
       labels:
-        app: "{{ template "kubebackup.fullname" . }}"
+        app: "{{ template "kubebackup.name" . }}"
         chart: "{{ template "kubebackup.chart" . }}"
         release: {{ .Release.Name | quote }}
-{{- if or .Values.podAnnotations .Values.metrics.enabled }}
-      annotations:
-{{- if .Values.podAnnotations }}
-{{ toYaml .Values.podAnnotations | indent 8 }}
-{{- end }}
-{{- if .Values.metrics.podAnnotations }}
-{{ toYaml .Values.metrics.podAnnotations | indent 8 }}
-{{- end }}
-{{- end }}
     spec:
       {{- if .Values.schedulerName }}
       schedulerName: "{{ .Values.schedulerName }}"
       {{- end }}
-{{- include "kubebackup.imagePullSecrets" . | indent 6 }}
+      serviceAccountName: {{ template "kubebackup.name" . }}
       containers:
       - name: kubebackup
         image: {{ template "kubebackup.image" . }}
@@ -52,23 +44,26 @@ spec:
         - name: secret_key
           valueFrom:
             secretKeyRef:
-              name: {{ template "kubebackup.fullname" . }}
+              name: {{ template "kubebackup.name" . }}
               key: secret_key
         - name: folder
           value: {{ .Values.folder | quote }}
         - name: endpoint
           value: {{ .Values.endpoint | quote }}
         volumeMounts:
-        - mountPath: /mnt/backup
-          name: kubebackup-data
-          subPath: kubebackup
+        - name: data
+          mountPath: /mnt/backup
+          {{- if .Values.persistence.subPath }}
+          subPath: {{ .Values.persistence.subPath }}
+          {{- end }}
       volumes:
+      - name: data
       {{- if .Values.persistence.enabled }}
         persistentVolumeClaim:
-          claimName: {{ .Values.persistence.existingClaim | default (include "kubebackup.fullname" .) }}
+          claimName: {{ .Values.persistence.existingClaim | default (include "kubebackup.name" .) }}
       {{- else }}
         emptyDir: {}
-      {{ end }}
+      {{- end -}}
     {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
