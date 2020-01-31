@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "kubebackup.fullname" . }}
+{{- if .Values.annotations }}
+  annotations:
+{{ toYaml .Values.annotations | indent 4 }}
+{{- end }}
+  labels:
+    app: {{ template "kubebackup.name" . }}
+    chart: {{ template "kubebackup.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    kubernetes.io/cluster-service: "true"
+{{- if .Values.labels }}
+{{ toYaml .Values.labels | indent 4 }}
+{{- end }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: {{ template "kubebackup.name" . }}
+      release: {{ .Release.Name }}
+      kubernetes.io/cluster-service: "true"
+  template:
+    metadata:
+    {{- if .Values.podAnnotations }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+    {{- end }}
+      labels:
+        app: {{ template "kubebackup.name" . }}
+        release: {{ .Release.Name }}
+        kubernetes.io/cluster-service: "true"
+    spec:
+      {{- if .Values.securityContext }}
+      securityContext:
+{{ toYaml .Values.securityContext | indent 8 }}
+      {{- end }}
+      serviceAccountName: {{ template "kubebackup.serviceAccountName" . }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+          - name: CRON_SCHEDULE
+            value: "{{ .Values.CRON_SCHEDULE }}"
+          - name: S3_REGION
+            value: {{ required ".Values.s3.region is required" .Values.s3.region }}
+          - name: S3_BUCKET
+            value: {{ required ".Values.s3.bucket is required" .Values.s3.bucket }}
+          - name: S3_ACCESSKEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "kubebackup.fullname" . }}-secret
+                key: s3AccessKey
+          - name: S3_SECRETKEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "kubebackup.fullname" . }}-secret
+                key: s3SecretKey
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+    {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.image.pullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+    {{- end }}
+    {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+    {{- end }}
+    {{- if .Values.tolerations }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+    {{- end }}
+    {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+    {{- end }}

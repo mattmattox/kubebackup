@@ -1,0 +1,58 @@
+labels:
+  io.cattle.role: cluster # options are cluster/project
+categories:
+  - kubebackup
+namespace: kube-system
+questions:
+- variable: defaultImage
+  default: true
+  description: "Use default Docker image"
+  label: Use Default Image
+  type: boolean
+  show_subquestion_if: false
+  group: "Container Images"
+  subquestions:
+  - variable: image.repository
+    default: "docker.io/cube8021/kubebackup"
+    description: "Docker image repository"
+    type: string
+    label: Image Repository
+  - variable: image.tag
+    default: "v0.1.12"
+    description: "Docker image tag"
+    type: string
+    label: Image Tag
+- variable: CRON_SCHEDULE
+  required: true
+  default: '00 00 * * *'
+  description: "Backup schedule in crontab format"
+  type: string
+  label: "Backup schedule"
+- variable: s3.region
+  default: "us-east-1"
+  description: "S3 region"
+  type: string
+  label: S3 Region
+  required: true
+  group: "Storage System Settings"
+- variable: s3.bucket
+  default: ""
+  description: "S3 bucket name"
+  type: string
+  label: S3 Bucket Name
+  required: true
+  group: "Storage System Settings"
+- variable: s3.accessKey
+  default: ""
+  description: "Access Key for S3 configuration	"
+  type: string
+  label: AWS S3 AccessKey
+  required: true
+  group: "Storage System Settings"
+- variable: s3.secretKey
+  default: ""
+  description: "Secret Key for S3 configuration	"
+  type: password
+  label: AWS S3 SecretKey
+  required: true
+  group: "Storage System Settings"

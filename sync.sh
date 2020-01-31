@@ -12,24 +12,20 @@ rm -rf /tmp/backup_files
 mkdir -p /tmp/backup_files
 cd /tmp/backup_files
 
-echo "################################################################################################################"
-echo "::Namespace Info::"
 mkdir namespaces
 cd namespaces
 for namespace in $(kubectl get namespaces -o go-template --template '{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}')
 do
-	echo "################################################################################################################"
 	echo "Namespace: $namespace"
 	mkdir -p "$namespace"
-	#namespaceresources="certificatesigningrequests componentstatuses configmaps controllerrevisions cronjobs customresourcedefinition daemonsets deployments endpoints events horizontalpodautoscalers ingresses jobs limitranges networkpolicies persistentvolumeclaims persistentvolumes poddisruptionbudgets pods podsecuritypolicies podtemplates replicasets replicationcontrollers resourcequotas rolebindings roles secrets serviceaccounts services statefulsets storageclasses"
-  namespaceresources="$(kubectl api-resources -n $namespace -o name)"
+	namespaceresources="certificatesigningrequests componentstatuses configmaps controllerrevisions cronjobs customresourcedefinition daemonsets deployments endpoints events horizontalpodautoscalers ingresses jobs limitranges networkpolicies persistentvolumeclaims persistentvolumes poddisruptionbudgets pods podsecuritypolicies podtemplates replicasets replicationcontrollers resourcequotas rolebindings roles secrets serviceaccounts services statefulsets storageclasses"
   for namespaceresource in $namespaceresources
 	do
 		echo "Resource: $namespaceresource"
     ##Getting RAW yaml output
 		kubectl get "$namespaceresource" -n "$namespace" -o yaml > ./"$namespace"/"$namespaceresource"-raw.yaml
     ##Filtering output Rancher metadata
-    cat ./"$namespace"/"$namespaceresource"-raw.yaml \
+    cat ./"$namespace"/"$namespaceresource"-raw.yaml | \
     grep -v 'cattle.io/timestamp:' | \
     grep -v 'cni.projectcalico.org/podIP:' | \
     grep -v 'creationTimestamp:' | \
@@ -39,10 +35,9 @@ do
     sed '/^status:/q' | \
     grep -v 'status:' > ./"$namespace"/"$namespaceresource"-generic.yaml
 	done
-	echo "################################################################################################################"
 done
-echo "################################################################################################################"
 
+mkdir -p /backup_data/
 cd /backup_data/
 echo "Running tar..."
 tar -czvf "$DATE".tar.gz -C /tmp/backup_files .
