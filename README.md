@@ -1,6 +1,6 @@
 ![KubeBackup Logo](/assets/kubebackup-logo.png)
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/cube8021/kubebackup.svg)]
+![Docker Pulls](https://img.shields.io/docker/pulls/cube8021/kubebackup.svg)
 
 # What is KubeBackup?
 KubeBackup is a tool for backing up the configuration files in a Kubernetes cluster and uploading them to a S3 bucket.
