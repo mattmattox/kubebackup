@@ -16,7 +16,7 @@ echo '[default]' > ~/.aws/config
 echo 'region='"$REGION" >> ~/.aws/config
 echo 'output=json' >> ~/.aws/config
 
-#echo "Running once during startup..."
+echo "Running once during startup..."
 /sync.sh
 
 echo "Setting up cron..."
