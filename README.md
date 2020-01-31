@@ -1,4 +1,4 @@
-![KubeBackup Logo](/assets/kubebackup-logo.png)
+![KubeBackup Logo](https://github.com/mattmattox/kubebackup/raw/master/assets/kubebackup-logo.png)
 
 ![Docker Pulls](https://img.shields.io/docker/pulls/cube8021/kubebackup.svg)
 
