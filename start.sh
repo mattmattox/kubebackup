@@ -16,10 +16,10 @@ echo '[default]' > ~/.aws/config
 echo 'region='"$REGION" >> ~/.aws/config
 echo 'output=json' >> ~/.aws/config
 
-echo "Creating kubeconfig..."
-mkdir -p ~/.kube/
-kubectl get secret -n kube-system kube-admin -o jsonpath={.data.Config} | base64 -d > ~/.kube/config
-sed -i -e 's/[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/127.0.0.1/g' ~/.kube/config
+#echo "Creating kubeconfig..."
+#mkdir -p ~/.kube/
+#kubectl get secret -n kube-system kube-admin -o jsonpath={.data.Config} | base64 -d > ~/.kube/config
+#sed -i -e 's/[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/127.0.0.1/g' ~/.kube/config
 
 #echo "Running once during startup..."
 #/sync.sh
