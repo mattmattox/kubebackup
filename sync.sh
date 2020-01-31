@@ -13,17 +13,6 @@ mkdir -p /tmp/backup_files
 cd /tmp/backup_files
 
 echo "################################################################################################################"
-echo "::Cluster Info::"
-mkdir clusterinfo
-clusterresources="certificatesigningrequests clusterrolebindings clusterroles componentstatuses configmaps controllerrevisions cronjobs customresourcedefinition daemonsets deployments endpoints events horizontalpodautoscalers ingresses jobs limitranges namespaces networkpolicies nodes persistentvolumeclaims persistentvolumes poddisruptionbudgets pods podsecuritypolicies podtemplates replicasets replicationcontrollers resourcequotas rolebindings roles secrets serviceaccounts services statefulsets storageclasses"
-for clusterresource in $clusterresources
-do
-	echo "Resource: $clusterresource"
-	kubectl get "$clusterresource" -o yaml > ./clusterinfo/"$clusterresource"
-done
-echo "################################################################################################################"
-
-echo "################################################################################################################"
 echo "::Namespace Info::"
 mkdir namespaces
 cd namespaces
@@ -32,15 +21,23 @@ do
 	echo "################################################################################################################"
 	echo "Namespace: $namespace"
 	mkdir -p "$namespace"
-	namespaceresources="certificatesigningrequests componentstatuses configmaps controllerrevisions cronjobs customresourcedefinition daemonsets deployments endpoints events horizontalpodautoscalers ingresses jobs limitranges networkpolicies persistentvolumeclaims persistentvolumes poddisruptionbudgets pods podsecuritypolicies podtemplates replicasets replicationcontrollers resourcequotas rolebindings roles secrets serviceaccounts services statefulsets storageclasses"
-	for namespaceresource in $namespaceresources
+	#namespaceresources="certificatesigningrequests componentstatuses configmaps controllerrevisions cronjobs customresourcedefinition daemonsets deployments endpoints events horizontalpodautoscalers ingresses jobs limitranges networkpolicies persistentvolumeclaims persistentvolumes poddisruptionbudgets pods podsecuritypolicies podtemplates replicasets replicationcontrollers resourcequotas rolebindings roles secrets serviceaccounts services statefulsets storageclasses"
+  namespaceresources="$(kubectl api-resources -n $namespace -o name)"
+  for namespaceresource in $namespaceresources
 	do
 		echo "Resource: $namespaceresource"
-		kubectl get "$namespaceresource" -n "$namespace" -o yaml > ./"$namespace"/"$namespaceresource"
-		if [[ "$namespaceresource" == "secret" ]]
-		then
-			/kubedecode "$namespaceresource" "$namespace" > ./"$namespace"/secret_decoded
-		fi
+    ##Getting RAW yaml output
+		kubectl get "$namespaceresource" -n "$namespace" -o yaml > ./"$namespace"/"$namespaceresource"-raw.yaml
+    ##Filtering output Rancher metadata
+    cat ./"$namespace"/"$namespaceresource"-raw.yaml \
+    grep -v 'cattle.io/timestamp:' | \
+    grep -v 'cni.projectcalico.org/podIP:' | \
+    grep -v 'creationTimestamp:' | \
+    grep -v 'uid:' | \
+    grep -v 'resourceVersion:' | \
+    grep -v 'selfLink:' | \
+    sed '/^status:/q' | \
+    grep -v 'status:' > ./"$namespace"/"$namespaceresource"-generic.yaml
 	done
 	echo "################################################################################################################"
 done
