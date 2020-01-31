@@ -1,4 +1,4 @@
-FROM alpine:3.9
+FROM alpine:latest
 MAINTAINER Matthew Mattox - Matthew.Mattox@rancher.com
 
 ##Installing Packages
