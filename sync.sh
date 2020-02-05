@@ -23,7 +23,7 @@ do
   do
     echo "Resource: $namespaceresource"
     ##Getting RAW yaml output
-		kubectl get "$namespaceresource" -n "$namespace" -o yaml > ./"$namespace"/"$namespaceresource"-raw.yaml
+    kubectl get "$namespaceresource" -n "$namespace" -o yaml > ./"$namespace"/"$namespaceresource"-raw.yaml
     ##Filtering output Rancher metadata
     cat ./"$namespace"/"$namespaceresource"-raw.yaml | \
     grep -v 'cattle.io/timestamp:' | \
