@@ -16,14 +16,14 @@ mkdir namespaces
 cd namespaces
 for namespace in $(kubectl get namespaces -o go-template --template '{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}')
 do
-	echo "Namespace: $namespace"
-	mkdir -p "$namespace"
-	namespaceresources="certificatesigningrequests componentstatuses configmaps controllerrevisions cronjobs customresourcedefinition daemonsets deployments endpoints events horizontalpodautoscalers ingresses jobs limitranges networkpolicies persistentvolumeclaims persistentvolumes poddisruptionbudgets pods podsecuritypolicies podtemplates replicasets replicationcontrollers resourcequotas rolebindings roles secrets serviceaccounts services statefulsets storageclasses"
+  echo "Namespace: $namespace"
+  mkdir -p "$namespace"
+  namespaceresources="certificatesigningrequests componentstatuses configmaps controllerrevisions cronjobs customresourcedefinition daemonsets deployments endpoints events horizontalpodautoscalers ingresses jobs limitranges networkpolicies persistentvolumeclaims persistentvolumes poddisruptionbudgets pods podsecuritypolicies podtemplates replicasets replicationcontrollers resourcequotas rolebindings roles secrets serviceaccounts services statefulsets storageclasses"
   for namespaceresource in $namespaceresources
-	do
-		echo "Resource: $namespaceresource"
+  do
+    echo "Resource: $namespaceresource"
     ##Getting RAW yaml output
-		kubectl get "$namespaceresource" -n "$namespace" -o yaml > ./"$namespace"/"$namespaceresource"-raw.yaml
+    kubectl get "$namespaceresource" -n "$namespace" -o yaml > ./"$namespace"/"$namespaceresource"-raw.yaml
     ##Filtering output Rancher metadata
     cat ./"$namespace"/"$namespaceresource"-raw.yaml | \
     grep -v 'cattle.io/timestamp:' | \
@@ -34,7 +34,7 @@ do
     grep -v 'selfLink:' | \
     sed '/^status:/q' | \
     grep -v 'status:' > ./"$namespace"/"$namespaceresource"-generic.yaml
-	done
+  done
 done
 
 mkdir -p /backup_data/
@@ -44,8 +44,8 @@ tar -czvf "$DATE".tar.gz -C /tmp/backup_files .
 echo "Starting sync to S3..."
 if [[ ! -z $CLUSTER ]]
 then
-	aws s3 sync /backup_data s3://"$S3_BUCKET"/"$CLUSTER"
+  aws s3 sync /backup_data s3://"$S3_BUCKET"/"$CLUSTER"
 else
-	aws s3 sync /backup_data s3://"$S3_BUCKET"
+  aws s3 sync /backup_data s3://"$S3_BUCKET"
 fi
 echo "$(date) End"
