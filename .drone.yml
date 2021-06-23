@@ -7,6 +7,7 @@ steps:
   - name: Docker-Build-Test
     image: plugins/docker
     settings:
+      custom_dns: [ 1.1.1.1 ]
       purge: false
       dry_run: true
       repo: cube8021/kubebackup
@@ -15,6 +16,7 @@ steps:
   - name: Docker-Build-Publish
     image: plugins/docker
     settings:
+      custom_dns: [ 1.1.1.1 ]
       purge: false
       dry_run: false
       repo: cube8021/kubebackup
