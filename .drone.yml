@@ -12,6 +12,9 @@ steps:
       dry_run: true
       repo: cube8021/kubebackup
       cache_from: "cube8021/kubebackup:latest"
+    when:
+      event:
+      - push
 
   - name: Docker-Build-Publish
     image: plugins/docker
