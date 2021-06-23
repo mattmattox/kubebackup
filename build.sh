@@ -44,6 +44,12 @@ echo "Environment: $Environment"
 echo "Release: $RELEASE"
 echo "Build Number: $DRONE_BUILD_NUMBER"
 
+echo "Setting up SSH..."
+mkdir -p ~/.ssh
+echo "$SSH_KEY" > ~/.ssh/id_rsa
+chmod 0600 ~/.ssh/id_rsa
+echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+
 cd /drone/src/
 
 echo "Find and replace values..."
@@ -52,10 +58,10 @@ sed -i "s|RELEASE|${RELEASE}|g" ./Chart/values.yaml
 sed -i "s|DRONE_BUILD_NUMBER|${DRONE_BUILD_NUMBER}|g" ./Chart/Chart.yaml
 sed -i "s|DRONE_BUILD_NUMBER|${DRONE_BUILD_NUMBER}|g" ./Chart/values.yaml
 
-echo "::Chart::"
-cat ./Chart/Chart.yaml
-echo "::Values::"
-cat ./Chart/values.yaml
+#echo "::Chart::"
+#cat ./Chart/Chart.yaml
+#echo "::Values::"
+#cat ./Chart/values.yaml
 
 echo "Packaging helm chart..."
 helm package ./Chart/ --version $RELEASE --app-version $DRONE_BUILD_NUMBER
@@ -65,10 +71,10 @@ mkdir -p helm-repo
 cd helm-repo
 if [[ ${Environment} == "production" ]]
 then
-  git clone https://github.com/SupportTools/helm-chart.git .
+  git clone git@github.com:SupportTools/helm-chart.git .
 elif [[ ${Environment} == "dev" ]]
 then
-  git clone https://github.com/SupportTools/helm-chart-dev.git .
+  git clone git@github.com:SupportTools/helm-chart-dev.git .
 else
   echo "Unknown Environment"
 fi
