@@ -6,10 +6,9 @@ name: Kube-Backup
 steps:
   - name: Docker-Build-Test
     image: plugins/docker
-    custom_dns: [ 1.1.1.1 ]
     settings:
       purge: false
-      dry-run: true
+      dry_run: true
       repo: cube8021/kubebackup
       dockerfile: ./Dockerfile
       context: ./
@@ -17,10 +16,9 @@ steps:
 
   - name: Docker-Build-Publish
     image: plugins/docker
-    custom_dns: [ 1.1.1.1 ]
     settings:
       purge: false
-      dry-run: false
+      dry_run: false
       registry: docker.io
       repo: docker.io/cube8021/kubebackup
       dockerfile: ./Dockerfile
