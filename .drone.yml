@@ -12,22 +12,21 @@ steps:
       repo: cube8021/kubebackup
       dockerfile: ./Dockerfile
       context: ./
-      cache_from: "docker.io/cube8021/kubebackup:latest"
+      cache_from: "cube8021/kubebackup:latest"
 
   - name: Docker-Build-Publish
     image: plugins/docker
     settings:
       purge: false
       dry_run: false
-      registry: docker.io
-      repo: docker.io/cube8021/kubebackup
+      repo: cube8021/kubebackup
       dockerfile: ./Dockerfile
       context: ./
       tags:
         - ${DRONE_BUILD_NUMBER}
         - ${DRONE_TAG}
         - latest
-      cache_from: "docker.io/cube8021/kubebackup:latest"
+      cache_from: "cube8021/kubebackup:latest"
       username:
         from_secret: docker-username
       password:
