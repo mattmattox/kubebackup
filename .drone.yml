@@ -34,7 +34,8 @@ steps:
         from_secret: docker-password
     when:
      event:
-     - tag
+     - deployment
+     - promote
     
   - name: Helm-Chart
     image: supporttools/kube-builder:32
@@ -42,4 +43,5 @@ steps:
       - ./build.sh ${DRONE_TAG}
     when:
      event:
-     - tag
+     - deployment
+     - promote
