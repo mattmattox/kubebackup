@@ -1,38 +1,13 @@
 #!/bin/bash
 
 help() {
-
   echo "Build Script
   Usage: build.sh -b DRONE_BUILD_NUMBER -R RELEASE -r RELEASE_CANDIDATE -e ENV
   All flags are optional
   -b    Drone build number (10)
   -r    Release number (v0.1.2-rc1)
   -e    Environment (dev|production)"
-
 }
-
-while getopts ":b:r:e:h" opt; do
-  case $opt in
-    b)
-      DRONE_BUILD_NUMBER="${OPTARG}"
-      ;;
-    r)
-      RELEASE="${OPTARG}"
-      ;;
-    e)
-      ENV="${OPTARG}"
-      ;;
-    h)
-      help && exit 0
-      ;;
-    :)
-      echo "Option -$OPTARG requires an argument."
-      exit 1
-      ;;
-    *)
-      help && exit 0
-  esac
-done
 
 cd /drone/src/
 
