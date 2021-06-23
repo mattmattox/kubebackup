@@ -39,7 +39,9 @@ steps:
   - name: Helm-Chart-Dev
     image: supporttools/kube-builder:42
     commands:
-      - bash ./build.sh -e dev
+      - echo ${Release}
+      - bash ./build.sh -r ${Release} -e dev
+      - printenv
     when:
      event:
      - deployment
