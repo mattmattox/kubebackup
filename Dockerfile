@@ -1,5 +1,4 @@
 FROM alpine:latest
-MAINTAINER Matthew Mattox - Matthew.Mattox@rancher.com
 
 ##Installing Packages
 RUN apk --no-cache add \
