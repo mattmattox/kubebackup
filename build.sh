@@ -3,21 +3,17 @@
 help() {
 
   echo "Build Script
-  Usage: build.sh -b DRONE_BUILD_NUMBER -r Release -e Environment
+  Usage: build.sh -b DRONE_BUILD_NUMBER -e Environment
   All flags are optional
   -b    Drone build number (10)
-  -r    Release number (v0.1.2-rc1)
   -e    Environment (dev|production)"
 
 }
 
-while getopts ":b:r:e:h" opt; do
+while getopts ":b:e:h" opt; do
   case $opt in
     b)
       DRONE_BUILD_NUMBER="${OPTARG}"
-      ;;
-    r)
-      Release="${OPTARG}"
       ;;
     e)
       Environment="${OPTARG}"
@@ -34,13 +30,24 @@ while getopts ":b:r:e:h" opt; do
   esac
 done
 
+if [[ -z $Release ]]
+then
+  echo "Action must be set"
+  exit 0
+fi
+
 cd /drone/src/
 
 echo "Find and replace values..."
-sed -i "s/RELEASE/${Release}" ./Chart/Chart.yaml
-sed -i "s/RELEASE/${Release}" ./Chart/values.yaml
-sed -i "s/DRONE_BUILD_NUMBER/${DRONE_BUILD_NUMBER}" ./Chart/Chart.yaml
-sed -i "s/DRONE_BUILD_NUMBER/${DRONE_BUILD_NUMBER}" ./Chart/values.yaml
+sed -i "s|RELEASE|${Release}|g" ./Chart/Chart.yaml
+sed -i "s|RELEASE|${Release}|g" ./Chart/values.yaml
+sed -i "s|DRONE_BUILD_NUMBER|${DRONE_BUILD_NUMBER}|g" ./Chart/Chart.yaml
+sed -i "s|DRONE_BUILD_NUMBER|${DRONE_BUILD_NUMBER}|g" ./Chart/values.yaml
+
+echo "::Chart::"
+cat ./Chart/Chart.yaml
+echo "::Values::"
+cat ./Chart/values.yaml
 
 echo "Packaging helm chart..."
 helm package ./Chart/ --version $Release --app-version $DRONE_BUILD_NUMBER
