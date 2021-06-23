@@ -3,23 +3,23 @@
 help() {
 
   echo "Build Script
-  Usage: build.sh -t DRONE_BRANCH -b DRONE_BUILD_NUMBER -e ENV
+  Usage: build.sh -b DRONE_BUILD_NUMBER -R RELEASE -r RELEASE_CANDIDATE -e ENV
   All flags are optional
-  -t    Drone Tag (v1.2.3)
   -b    Drone build number (10)
+  -r    Release number (v0.1.2-rc1)
   -e    Environment (dev|production)"
 
 }
 
-while getopts ":d:s:r:fph" opt; do
+while getopts ":b:r:e:h" opt; do
   case $opt in
-    t)
-      DRONE_BRANCH="${OPTARG}"
-      ;;
     b)
       DRONE_BUILD_NUMBER="${OPTARG}"
       ;;
-    b)
+    r)
+      RELEASE="${OPTARG}"
+      ;;
+    e)
       ENV="${OPTARG}"
       ;;
     h)
@@ -36,20 +36,20 @@ done
 
 cd /drone/src/
 
-if [[ -z $DRONE_BRANCH ]] || [[ -z $DRONE_BUILD_NUMBER ]] || [[ -z $ENV]]
+if [[ -z $RELEASE ]] || [[ -z $DRONE_BUILD_NUMBER ]] || [[ -z $ENV]]
 then
   help
   exit 1
 fi
 
-echo "Find and replace DRONE_BRANCH..."
-sed -i "s/DRONE_BRANCH/${DRONE_BRANCH}" ./Chart/Chart.yaml
-sed -i "s/DRONE_BRANCH/${DRONE_BRANCH}" ./Chart/values.yaml
+echo "Find and replace values..."
+sed -i "s/RELEASE/${RELEASE}" ./Chart/Chart.yaml
+sed -i "s/RELEASE/${RELEASE}" ./Chart/values.yaml
 sed -i "s/DRONE_BUILD_NUMBER/${DRONE_BUILD_NUMBER}" ./Chart/Chart.yaml
 sed -i "s/DRONE_BUILD_NUMBER/${DRONE_BUILD_NUMBER}" ./Chart/values.yaml
 
 echo "Packaging helm chart..."
-helm package ./Chart/ --version $DRONE_BRANCH --app-version $DRONE_BUILD_NUMBER
+helm package ./Chart/ --version $RELEASE --app-version $DRONE_BUILD_NUMBER
 
 echo "Pulling down chart repo..."
 mkdir -p helm-repo
@@ -81,5 +81,5 @@ fi
 
 echo "Publishing to Chart repo..."
 git add .
-git commit -m "Publishing KubeBackup ${DRONE_BRANCH}"
+git commit -m "Publishing KubeBackup ${RELEASE}"
 git push

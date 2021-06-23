@@ -30,11 +30,14 @@ steps:
      event:
      - deployment
      - promote
+     target:
+     - dev
+     - production
     
   - name: Helm-Chart-Dev
     image: supporttools/kube-builder:32
     commands:
-      - bash ./build.sh -t ${DRONE_BRANCH} -b ${DRONE_BUILD_NUMBER} -e dev
+      - bash ./build.sh -b ${DRONE_BUILD_NUMBER} -e dev -r ${RELEASE}
     when:
      event:
      - deployment
@@ -45,7 +48,7 @@ steps:
   - name: Helm-Chart-Prod
     image: supporttools/kube-builder:32
     commands:
-      - bash ./build.sh -t ${DRONE_BRANCH} -b ${DRONE_BUILD_NUMBER} -e production
+      - bash ./build.sh -b ${DRONE_BUILD_NUMBER} -e production -r ${RELEASE}
     when:
      event:
      - deployment
