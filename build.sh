@@ -36,12 +36,6 @@ done
 
 cd /drone/src/
 
-if [[ -z $RELEASE ]] || [[ -z $DRONE_BUILD_NUMBER ]] || [[ -z $Environment]]
-then
-  help
-  exit 1
-fi
-
 echo "Find and replace values..."
 sed -i "s/RELEASE/${Release}" ./Chart/Chart.yaml
 sed -i "s/RELEASE/${Release}" ./Chart/values.yaml
