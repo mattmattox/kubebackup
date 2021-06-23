@@ -26,7 +26,7 @@ while getopts ":b:r:e:h" opt; do
       help && exit 0
       ;;
     :)
-      techo "Option -$OPTARG requires an argument."
+      echo "Option -$OPTARG requires an argument."
       exit 1
       ;;
     *)
