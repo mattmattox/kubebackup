@@ -65,10 +65,10 @@ mkdir -p helm-repo
 cd helm-repo
 if [[ ${Environment} == "production" ]]
 then
-  git clone git@github.com:SupportTools/helm-chart.git .
+  git clone https://github.com/SupportTools/helm-chart.git .
 elif [[ ${Environment} == "dev" ]]
 then
-  git clone git@github.com:SupportTools/helm-chart-dev.git .
+  git clone https://github.com/SupportTools/helm-chart-dev.git .
 else
   echo "Unknown Environment"
 fi
