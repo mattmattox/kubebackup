@@ -10,8 +10,6 @@ steps:
       purge: false
       dry_run: true
       repo: cube8021/kubebackup
-      dockerfile: ./Dockerfile
-      context: ./
       cache_from: "cube8021/kubebackup:latest"
 
   - name: Docker-Build-Publish
@@ -20,11 +18,8 @@ steps:
       purge: false
       dry_run: false
       repo: cube8021/kubebackup
-      dockerfile: ./Dockerfile
-      context: ./
       tags:
         - ${DRONE_BUILD_NUMBER}
-        - ${DRONE_TAG}
         - latest
       cache_from: "cube8021/kubebackup:latest"
       username:

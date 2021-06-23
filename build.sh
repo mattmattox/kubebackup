@@ -13,9 +13,11 @@ fi
 echo "Find and replace DRONE_TAG..."
 sed -i "s/DRONE_TAG/${DRONE_TAG}" ./Chart/Chart.yaml
 sed -i "s/DRONE_TAG/${DRONE_TAG}" ./Chart/values.yaml
+sed -i "s/DRONE_BUILD_NUMBER/${DRONE_BUILD_NUMBER}" ./Chart/Chart.yaml
+sed -i "s/DRONE_BUILD_NUMBER/${DRONE_BUILD_NUMBER}" ./Chart/values.yaml
 
 echo "Packaging helm chart..."
-helm package ./Chart/ --version $DRONE_TAG --app-version $DRONE_TAG
+helm package ./Chart/ --version $DRONE_TAG --app-version $DRONE_BUILD_NUMBER
 
 echo "Pulling down chart repo..."
 mkdir -p helm-repo
