@@ -10,10 +10,13 @@ help() {
 
 }
 
-while getopts ":b:e:h" opt; do
+while getopts ":b:r:e:h" opt; do
   case $opt in
     b)
       DRONE_BUILD_NUMBER="${OPTARG}"
+      ;;
+    r)
+      RELEASE="${OPTARG}"
       ;;
     e)
       Environment="${OPTARG}"
@@ -38,14 +41,14 @@ fi
 
 echo "::Info::"
 echo "Environment: $Environment"
-echo "Release: $Release"
+echo "Release: $RELEASE"
 echo "Build Number: $DRONE_BUILD_NUMBER"
 
 cd /drone/src/
 
 echo "Find and replace values..."
-sed -i "s|RELEASE|${Release}|g" ./Chart/Chart.yaml
-sed -i "s|RELEASE|${Release}|g" ./Chart/values.yaml
+sed -i "s|RELEASE|${RELEASE}|g" ./Chart/Chart.yaml
+sed -i "s|RELEASE|${RELEASE}|g" ./Chart/values.yaml
 sed -i "s|DRONE_BUILD_NUMBER|${DRONE_BUILD_NUMBER}|g" ./Chart/Chart.yaml
 sed -i "s|DRONE_BUILD_NUMBER|${DRONE_BUILD_NUMBER}|g" ./Chart/values.yaml
 
@@ -55,7 +58,7 @@ echo "::Values::"
 cat ./Chart/values.yaml
 
 echo "Packaging helm chart..."
-helm package ./Chart/ --version $Release --app-version $DRONE_BUILD_NUMBER
+helm package ./Chart/ --version $RELEASE --app-version $DRONE_BUILD_NUMBER
 
 echo "Pulling down chart repo..."
 mkdir -p helm-repo
@@ -87,5 +90,5 @@ fi
 
 echo "Publishing to Chart repo..."
 git add .
-git commit -m "Publishing KubeBackup ${Release}"
+git commit -m "Publishing KubeBackup ${RELEASE}"
 git push
