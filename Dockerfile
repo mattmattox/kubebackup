@@ -1,5 +1,8 @@
 FROM alpine:latest
 
+## Switching mirror
+RUN sed -i 's/http\:\/\/dl-cdn.alpinelinux.org/http\:\/\/mirror.clarkson.edu/g' /etc/apk/repositories
+
 ##Installing Packages
 RUN apk --no-cache add \
 bash \
