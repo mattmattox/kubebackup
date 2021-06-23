@@ -32,9 +32,14 @@ done
 
 if [[ -z $Release ]]
 then
-  echo "Action must be set"
+  echo "Release must be set"
   exit 0
 fi
+
+echo "::Info::"
+echo "Environment: $Environment"
+echo "Release: $Release"
+echo "Build Number: $DRONE_BUILD_NUMBER"
 
 cd /drone/src/
 
