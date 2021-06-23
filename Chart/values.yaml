@@ -5,7 +5,7 @@
 
 image:
   repository: docker.io/cube8021/kubebackup
-  tag: v0.1.14
+  tag: DRONE_TAG
   pullPolicy: IfNotPresent
   pullSecrets: []
 

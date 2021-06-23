@@ -1,0 +1,45 @@
+---
+kind: pipeline
+type: kubernetes
+name: Kube-Backup
+
+steps:
+  - name: Docker-Build-Test
+    image: plugins/docker
+    settings:
+      purge: false
+      dry-run: true
+      repo: cube8021/kubebackup
+      dockerfile: ./Dockerfile
+      context: ./
+      cache_from: "docker.io/cube8021/kubebackup:latest"
+
+  - name: Docker-Build-Publish
+    image: plugins/docker
+    settings:
+      purge: false
+      dry-run: false
+      registry: docker.io
+      repo: docker.io/cube8021/kubebackup
+      dockerfile: ./Dockerfile
+      context: ./
+      tags:
+        - ${DRONE_BUILD_NUMBER}
+        - ${DRONE_TAG}
+        - latest
+      cache_from: "docker.io/cube8021/kubebackup:latest"
+      username:
+        from_secret: docker-username
+      password:
+        from_secret: docker-password
+    when:
+     event:
+     - tag
+    
+  - name: Helm-Chart
+    image: supporttools/kube-builder:32
+    commands:
+      - ./build.sh ${DRONE_TAG}
+    when:
+     event:
+     - tag
