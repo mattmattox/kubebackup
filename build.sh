@@ -60,10 +60,10 @@ sed -i "s|RELEASE|${RELEASE}|g" ./Chart/values.yaml
 sed -i "s|DRONE_BUILD_NUMBER|${DRONE_BUILD_NUMBER}|g" ./Chart/Chart.yaml
 sed -i "s|DRONE_BUILD_NUMBER|${DRONE_BUILD_NUMBER}|g" ./Chart/values.yaml
 
-#echo "::Chart::"
-#cat ./Chart/Chart.yaml
-#echo "::Values::"
-#cat ./Chart/values.yaml
+echo "::Chart::"
+cat ./Chart/Chart.yaml
+echo "::Values::"
+cat ./Chart/values.yaml
 
 echo "Packaging helm chart..."
 helm package ./Chart/ --version $RELEASE --app-version $DRONE_BUILD_NUMBER
@@ -95,15 +95,7 @@ else
   echo "Unknown Environment"
 fi
 
-
 echo "Publishing to Chart repo..."
 git add .
 git commit -m "Publishing KubeBackup ${RELEASE}"
 git push
-
-
-
-
-
-
-sleep 100000
