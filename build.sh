@@ -48,12 +48,9 @@ echo "Setting up SSH..."
 mkdir -p ~/.ssh
 echo "$SSH_KEY" > ~/.ssh/id_rsa
 chmod 0600 ~/.ssh/id_rsa
-echo "Host *" > ~/.ssh/config
-echo "  StrictHostKeyChecking no" >> ~/.ssh/config
-echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_rsa
-ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+git config --global core.sshCommand "ssh -i ~/.ssh/id_rsa -F /dev/null -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
 cd /drone/src/
 
@@ -72,8 +69,8 @@ echo "Packaging helm chart..."
 helm package ./Chart/ --version $RELEASE --app-version $DRONE_BUILD_NUMBER
 
 echo "Pulling down chart repo..."
-mkdir -p helm-repo
-cd helm-repo
+mkdir -p /drone/helm-repo
+cd /drone/helm-repo
 if [[ ${Environment} == "production" ]]
 then
   git clone --verbose --progress git@github.com:SupportTools/helm-chart.git .
