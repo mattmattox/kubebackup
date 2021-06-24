@@ -1,4 +1,4 @@
-# kubebackup
+# KubeBackup
 
 [KubeBackup](https://github.com/mattmattox/kubebackup) is a tool for backing up the configuration files in a Kubernetes cluster and uploading them to a S3 bucket.
 

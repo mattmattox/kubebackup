@@ -1,5 +1,6 @@
 ![KubeBackup Logo](https://github.com/mattmattox/kubebackup/raw/master/assets/kubebackup-logo.png)
 
+[![Build Status](https://drone.support.tools/api/badges/mattmattox/kubebackup/status.svg)](https://drone.support.tools/mattmattox/kubebackup)
 ![Docker Pulls](https://img.shields.io/docker/pulls/cube8021/kubebackup.svg)
 
 # What is KubeBackup?

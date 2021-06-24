@@ -1,0 +1,68 @@
+---
+kind: pipeline
+type: kubernetes
+name: Kube-Backup
+
+steps:
+  - name: Docker-Build-Test
+    image: plugins/docker
+    settings:
+      custom_dns: [ 1.1.1.1 ]
+      purge: false
+      dry_run: true
+      repo: cube8021/kubebackup
+      cache_from: "cube8021/kubebackup:latest"
+    when:
+      event:
+      - push
+
+  - name: Docker-Build-Publish
+    image: plugins/docker
+    settings:
+      custom_dns: [ 1.1.1.1 ]
+      purge: false
+      dry_run: false
+      repo: cube8021/kubebackup
+      tags:
+        - ${DRONE_BUILD_NUMBER}
+        - latest
+      cache_from: "cube8021/kubebackup:latest"
+      username:
+        from_secret: docker-username
+      password:
+        from_secret: docker-password
+    when:
+     event:
+     - deployment
+     - promote
+     target:
+     - dev
+     - production
+    
+  - name: Helm-Chart-Dev
+    image: supporttools/kube-builder:50
+    environment:
+      SSH_KEY:
+        from_secret: ssh_key    
+    commands:
+      - bash ./build.sh -b ${DRONE_BUILD_NUMBER} -r ${Release} -e dev
+    when:
+     event:
+     - deployment
+     - promote
+     target:
+     - dev
+
+  - name: Helm-Chart-Prod
+    image: supporttools/kube-builder:50
+    environment:
+      SSH_KEY:
+        from_secret: ssh_key    
+    commands:
+      - bash ./build.sh -b ${DRONE_BUILD_NUMBER} -r ${Release} -e production
+    when:
+     event:
+     - deployment
+     - promote
+     target:
+     - production
