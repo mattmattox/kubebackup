@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 help() {
 
@@ -50,6 +50,10 @@ echo "$SSH_KEY" > ~/.ssh/id_rsa
 chmod 0600 ~/.ssh/id_rsa
 echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 
+echo "Host *" > ~/.ssh/config
+echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
+
 cd /drone/src/
 
 echo "Find and replace values..."
@@ -71,10 +75,10 @@ mkdir -p helm-repo
 cd helm-repo
 if [[ ${Environment} == "production" ]]
 then
-  git clone git@github.com:SupportTools/helm-chart.git .
+  git clone --verbose --progress git@github.com:SupportTools/helm-chart.git .
 elif [[ ${Environment} == "dev" ]]
 then
-  git clone git@github.com:SupportTools/helm-chart-dev.git .
+  git clone --verbose --progress git@github.com:SupportTools/helm-chart-dev.git .
 else
   echo "Unknown Environment"
 fi
