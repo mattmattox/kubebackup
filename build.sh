@@ -102,3 +102,10 @@ echo "Publishing to Chart repo..."
 git add .
 git commit -m "Publishing KubeBackup ${RELEASE}"
 git push
+
+
+
+
+
+
+sleep 100000
