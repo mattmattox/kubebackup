@@ -48,11 +48,12 @@ echo "Setting up SSH..."
 mkdir -p ~/.ssh
 echo "$SSH_KEY" > ~/.ssh/id_rsa
 chmod 0600 ~/.ssh/id_rsa
-echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-
 echo "Host *" > ~/.ssh/config
 echo "  StrictHostKeyChecking no" >> ~/.ssh/config
 echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_rsa
+ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
 cd /drone/src/
 
