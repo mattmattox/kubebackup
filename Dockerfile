@@ -1,9 +1,5 @@
 FROM alpine:latest
 
-## Switching mirror
-RUN sed -i 's/http\:\/\/dl-cdn.alpinelinux.org/https\:\/\/alpine-mirror.support.tools/g' /etc/apk/repositories
-RUN sed -i 's/https\:\/\/dl-cdn.alpinelinux.org/https\:\/\/alpine-mirror.support.tools/g' /etc/apk/repositories
-
 ##Installing Packages
 RUN apk --no-cache add \
 bash \
