@@ -46,7 +46,8 @@ echo "Build Number: $DRONE_BUILD_NUMBER"
 
 echo "Setting up SSH..."
 mkdir -p ~/.ssh
-echo "$SSH_KEY" > ~/.ssh/id_rsa
+echo "$SSH_KEY" > ~/.ssh/id_rsa.bin
+cat ~/.ssh/id_rsa.bin | base64 -d > ~/.ssh/id_rsa
 chmod 0600 ~/.ssh/id_rsa
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_rsa

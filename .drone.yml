@@ -1,46 +1,68 @@
 ---
 kind: pipeline
-type: kubernetes
+type: docker
 name: Kube-Backup
 
+concurrency:
+  limit: 1
+
+environment:
+  DOCKER_HOST: tcp://docker-in-docker:2375
+  DOCKER_CLI_EXPERIMENTAL: enabled
+  http_proxy: http://proxy.apt-cacher:3142/
+
 steps:
-  - name: Docker-Build-Test
-    image: plugins/docker
-    settings:
-      custom_dns: [ 1.1.1.1 ]
-      purge: false
-      dry_run: true
-      repo: cube8021/kubebackup
-      cache_from: "cube8021/kubebackup:latest"
+  - name: Waiting for Docker to start
+    image: ncrmro/docker-buildx:19.03.10
+    commands:
+    - echo 'Waiting for docker to start...'
+    - while ! docker info; do sleep 1; done
+    - echo 'Docker started'
+
+  - name: Docker Build
+    image: ncrmro/docker-buildx:19.03.10
+    environment:
+      http_proxy: http://proxy.apt-cacher:3142/
+    commands:
+    - docker version
+    - docker buildx version
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker buildx create --name multiarch --use
+    - docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile .
     when:
       event:
-      - push
+        exclude:
+        - deployment
+        - promote
+        - cron
 
-  - name: Docker-Build-Publish
-    image: plugins/docker
-    settings:
-      custom_dns: [ 1.1.1.1 ]
-      purge: false
-      dry_run: false
-      repo: cube8021/kubebackup
-      tags:
-        - ${DRONE_BUILD_NUMBER}
-        - latest
-      cache_from: "cube8021/kubebackup:latest"
-      username:
+  - name: Docker Publish
+    image: ncrmro/docker-buildx:19.03.10
+    environment:
+      http_proxy: http://proxy.apt-cacher:3142/
+      DOCKER_USERNAME:
         from_secret: docker-username
-      password:
+      DOCKER_PASSWORD:
         from_secret: docker-password
+    commands:
+    - docker version
+    - docker buildx version
+    - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker buildx create --name multiarch --use
+    - docker buildx build --platform linux/amd64,linux/arm64 -t cube8021/kubebackup:latest -t supporttools/kube-builder:${DRONE_BUILD_NUMBER} --push -f Dockerfile .
     when:
-     event:
-     - deployment
-     - promote
-     target:
-     - dev
-     - production
-    
+      event:
+      - deployment
+      - promote
+      - cron
+      target:
+      - dev
+      - production
+      - weekly
+  
   - name: Helm-Chart-Dev
-    image: supporttools/kube-builder:50
+    image: supporttools/kube-builder:latest
     environment:
       SSH_KEY:
         from_secret: ssh_key    
@@ -54,7 +76,7 @@ steps:
      - dev
 
   - name: Helm-Chart-Prod
-    image: supporttools/kube-builder:50
+    image: supporttools/kube-builder:latest
     environment:
       SSH_KEY:
         from_secret: ssh_key    
@@ -66,3 +88,10 @@ steps:
      - promote
      target:
      - production
+
+services:
+- name: docker-in-docker
+  docker:
+  image: docker:19.03.12-dind
+  command: ["dockerd", "--host", "0.0.0.0", "--experimental"]
+  privileged: true
