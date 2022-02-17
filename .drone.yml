@@ -46,7 +46,7 @@ steps:
     - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     - docker buildx create --name multiarch --use
-    - docker buildx build --platform linux/amd64,linux/arm64 -t cube8021/kubebackup:latest -t supporttools/kube-builder:${DRONE_BUILD_NUMBER} --push -f Dockerfile .
+    - docker buildx build --platform linux/amd64,linux/arm64 -t cube8021/kubebackup:latest -t cube8021/kubebackup:${DRONE_BUILD_NUMBER} --push -f Dockerfile .
     when:
       event:
       - deployment
