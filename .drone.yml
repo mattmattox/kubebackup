@@ -9,7 +9,6 @@ concurrency:
 environment:
   DOCKER_HOST: tcp://docker-in-docker:2375
   DOCKER_CLI_EXPERIMENTAL: enabled
-  http_proxy: http://proxy.apt-cacher:3142/
 
 steps:
   - name: Waiting for Docker to start
