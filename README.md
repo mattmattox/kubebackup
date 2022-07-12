@@ -11,10 +11,12 @@ KubeBackup accessing the kubernetes API from inside a containter. Inside that co
 
 ## Install
 ```
-helm repo add kubebackup https://mattmattox.github.io/helm-chart/
-helm install kubebackup kubebackup \
+helm repo add SupportTools https://charts.support.tools
+helm repo update
+helm install kubebackup SupportTools/kubebackup \
 --set s3.region="us-east-2" \
 --set s3.bucket="kubebackup" \
 --set s3.accessKey="AWS_ACCESS_KEY_GOES_HERE" \
---set s3.secretKey="AWS_SECRET_KEY_GOES_HERE"
+--set s3.secretKey="AWS_SECRET_KEY_GOES_HERE" \
+--version v1.1.0
 ```
