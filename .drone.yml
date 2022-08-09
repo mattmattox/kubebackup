@@ -96,5 +96,5 @@ services:
 - name: docker-in-docker
   docker:
   image: docker:20.10.14-dind
-  command: ["dockerd", "--host", "0.0.0.0", "--experimental"]
+  command: ["dockerd", "--host", "0.0.0.0", "--experimental", "--mtu=1300"]
   privileged: true
