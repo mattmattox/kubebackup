@@ -2,7 +2,7 @@ FROM alpine:latest
 
 ##Installing Packages
 RUN sed -i 's/http\:\/\/dl-cdn.alpinelinux.org/https\:\/\/alpine.global.ssl.fastly.net/g' /etc/apk/repositories && \
-printf "nameserver 1.1.1.1\nnameserver 1.0.0.1"> /etc/resolv.conf \ && apk update && apk add \
+apk update && apk add \
 bash \
 curl \
 grep \
