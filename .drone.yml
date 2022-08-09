@@ -1,10 +1,17 @@
 ---
 kind: pipeline
-type: docker
+type: kubernetes
 name: Kube-Backup
 
-concurrency:
-  limit: 1
+platform:
+  os: linux
+  arch: amd64
+
+clone:
+  depth: 1
+
+#concurrency:
+#  limit: 1
 
 environment:
   DOCKER_HOST: tcp://docker-in-docker:2375
