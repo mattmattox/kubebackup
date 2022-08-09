@@ -12,14 +12,14 @@ environment:
 
 steps:
   - name: Waiting for Docker to start
-    image: ncrmro/docker-buildx:19.03.10
+    image: cube8021/docker-buildx:20.10.14-0.8.2
     commands:
     - echo 'Waiting for docker to start...'
     - while ! docker info; do sleep 1; done
     - echo 'Docker started'
 
   - name: Docker Build
-    image: ncrmro/docker-buildx:19.03.10
+    image: cube8021/docker-buildx:20.10.14-0.8.2
     commands:
     - docker version
     - docker buildx version
@@ -34,7 +34,7 @@ steps:
         - cron
 
   - name: Docker Publish
-    image: ncrmro/docker-buildx:19.03.10
+    image: cube8021/docker-buildx:20.10.14-0.8.2
     environment:
       DOCKER_USERNAME:
         from_secret: docker-username
@@ -88,6 +88,6 @@ steps:
 services:
 - name: docker-in-docker
   docker:
-  image: docker:19.03.12-dind
+  image: docker:20.10.14-dind
   command: ["dockerd", "--host", "0.0.0.0", "--experimental"]
   privileged: true
