@@ -1,7 +1,7 @@
 apiVersion: v1
 name: kubebackup
-version: RELEASE
-appVersion: DRONE_BUILD_NUMBER
+version: ${CHART_VERSION}
+appVersion: ${APP_VERSION}
 description: KubeBackup is a tool for backing up the configuration files in a Kubernetes cluster and uploading them to a S3 bucket.
 keywords:
 - kubernetes

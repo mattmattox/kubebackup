@@ -1,19 +1,10 @@
-FROM alpine:latest
+FROM golang:1.17-alpine
 
-##Installing Packages
-RUN sed -i 's/http\:\/\/dl-cdn.alpinelinux.org/https\:\/\/alpine.global.ssl.fastly.net/g' /etc/apk/repositories && \
-apk update && apk add \
-bash \
-curl \
-grep \
-sed \
-aws-cli
+WORKDIR /app
 
-##Install kubectl
-RUN curl -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
-RUN chmod +x /usr/local/bin/kubectl
+COPY . .
 
-ADD *.sh /
-RUN chmod +x /*.sh
+RUN apk add --no-cache ca-certificates && \
+    chmod +x ./KubeBackup
 
-ENTRYPOINT ["/start.sh"]
+ENTRYPOINT ["./KubeBackup"]
