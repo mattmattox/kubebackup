@@ -1,8 +1,14 @@
 ![KubeBackup Logo](https://github.com/mattmattox/kubebackup/raw/master/assets/kubebackup-logo.png)
 
-[![Build Status](https://github.com/mattmattox/kubebackup/actions/workflows/build.yml/badge.svg)](https://github.com/mattmattox/kubebackup/actions/workflows/build.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/username/kubebackup)](https://goreportcard.com/report/github.com/mattmattox/kubebackup)
-![Docker Pulls](https://img.shields.io/docker/pulls/cube8021/kubebackup.svg)
+[![Build, Test and Publish](https://github.com/mattmattox/kubebackup/actions/workflows/build-and-publish.yml/badge.svg)](https://github.com/mattmattox/kubebackup/actions/workflows/build-and-publish.yml)
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/mattmattox/kubebackup)](https://goreportcard.com/report/github.com/mattmattox/kubebackup)
+
+[![Docker Pulls](https://img.shields.io/docker/pulls/cube8021/kubebackup.svg)](https://hub.docker.com/r/cube8021/kubebackup)
+
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/mattmattox/kubebackup)](https://github.com/mattmattox/kubebackup/releases)
+
+[![License](https://img.shields.io/github/license/mattmattox/kubebackup)](https://github.com/mattmattox/kubebackup/blob/master/LICENSE)
 
 # What is KubeBackup?
 
