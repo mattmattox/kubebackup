@@ -1,10 +1,5 @@
-FROM golang:1.17-alpine
+FROM scratch
 
 WORKDIR /app
-
-COPY . .
-
-RUN apk add --no-cache ca-certificates && \
-    chmod +x ./KubeBackup
-
-ENTRYPOINT ["./KubeBackup"]
+COPY kubebackup /app/KubeBackup
+ENTRYPOINT ["/app/KubeBackup"]

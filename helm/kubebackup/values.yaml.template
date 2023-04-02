@@ -39,8 +39,10 @@ rbac:
 
 secrets:
   s3:
-    region: us-east-1
     bucket: my-bucket
+    folder: "my-cluster"
+    region: us-east-1
+    endpoint: ""
     accessKey: ""
     secretKey: ""
 
@@ -49,3 +51,23 @@ serviceAccount:
   name: kubebackup
 
 securityContext: {}
+
+settings:
+  interval: 12h
+  retention: 30d
+  backupDir: /var/lib/kubebackup
+  loglevel: info
+
+metrics:
+  enabled: true
+  port: 9009
+  path: /metrics
+  alertmanager:
+    enabled: false
+    url: ""
+    interval: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "KubeBackup alert"
+      description: "KubeBackup is not running"

@@ -1,32 +1,38 @@
 ![KubeBackup Logo](https://github.com/mattmattox/kubebackup/raw/master/assets/kubebackup-logo.png)
 
-[![Build Status](https://drone.support.tools/api/badges/mattmattox/kubebackup/status.svg)](https://drone.support.tools/mattmattox/kubebackup)
+[![Build Status](https://github.com/mattmattox/kubebackup/actions/workflows/build.yml/badge.svg)](https://github.com/mattmattox/kubebackup/actions/workflows/build.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/username/kubebackup)](https://goreportcard.com/report/github.com/mattmattox/kubebackup)
 ![Docker Pulls](https://img.shields.io/docker/pulls/cube8021/kubebackup.svg)
 
 # What is KubeBackup?
+
 KubeBackup is a tool for backing up the configuration files in a Kubernetes cluster and uploading them to a S3 bucket.
 
 ## How does KubeBackup work?
-KubeBackup accessing the kubernetes API from inside a containter. Inside that containter there is a script will export all the cluster and namespace yaml files. These files can be used to redeploy an environment. All the exported yaml files are compressed and uploaded to an S3 Bucket.
+
+KubeBackup accesses the Kubernetes API from inside a container. Inside that container, a script exports all the cluster and namespace yaml files. These files can be used to redeploy an environment. All the exported yaml files are compressed and uploaded to an S3 Bucket.
 
 ## Install
+
+## Install / Upgrade
 ```
 helm repo add SupportTools https://charts.support.tools
 helm repo update
-helm install kubebackup SupportTools/kubebackup \
+helm upgrade --install kubebackup SupportTools/kubebackup \
 --set s3.region="us-east-2" \
---set s3.bucket="kubebackup" \
---set s3.accessKey="AWS_ACCESS_KEY_GOES_HERE" \
---set s3.secretKey="AWS_SECRET_KEY_GOES_HERE" \
---version v1.1.0
+--set s3.bucket="my-bucket" \
+--set s3.folder="my-cluster" \
+--set s3.accessKey="S3_ACCESS_KEY_GOES_HERE" \
+--set s3.secretKey="S3_SECRET_KEY_GOES_HERE"
 ```
 
+
 ## How it works
-KubeBackup is a helm chart that deploys a cronjob. The cronjob will run every 24 hours and export the cluster and namespace yaml files. The yaml files are compressed and uploaded to an S3 bucket.
+KubeBackup is a helm chart that deploys a pod. This will take a YAML backup of your cluster and upload it to an S3 bucket.
 
 The script connects to the Kubernetes API using either the provided kubeconfig file or the in-cluster configuration, if available. It then retrieves the list of available API resources and iterates through them to fetch namespaced and cluster-scoped objects.
 
-Namespaced objects are grouped by namespace and saved in the namespace/<namespace>/<object> directory, while cluster-scoped objects are saved in the clusterobjects/<object> directory. The output files are named <object-name>.yaml.
+Namespaced objects are grouped by namespace and saved in the `namespace-scoped/<namespace>/<object>` directory, while cluster-scoped objects are saved in the `cluster-scoped/<object>` directory. The output files are named <object-name>.yaml.
 
 ## Configuration
 The following table lists the configurable parameters of the KubeBackup chart and their default values.
@@ -50,7 +56,6 @@ git clone
 cd kubebackup
 make build
 ```
-
 
 ## Contributing
 If you would like to contribute to this project, please fork the repo and submit a pull request.

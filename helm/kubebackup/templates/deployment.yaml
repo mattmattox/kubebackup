@@ -48,22 +48,44 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         env:
-          - name: CRON_SCHEDULE
-            value: "{{ .Values.CRON_SCHEDULE }}"
-          - name: S3_REGION
-            value: {{ required ".Values.s3.region is required" .Values.s3.region }}
           - name: S3_BUCKET
-            value: {{ required ".Values.s3.bucket is required" .Values.s3.bucket }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "kubebackup.fullname" . }}-secret
+                key: s3-bucket
+          - name: S3_FOLDER
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "kubebackup.fullname" . }}-secret
+                key: s3-folder
+          - name: S3_REGION
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "kubebackup.fullname" . }}-secret
+                key: s3-region
+          - name: S3_ENDPOINT
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "kubebackup.fullname" . }}-secret
+                key: s3-endpoint
           - name: S3_ACCESSKEY
             valueFrom:
               secretKeyRef:
                 name: {{ template "kubebackup.fullname" . }}-secret
-                key: s3AccessKey
+                key:  s3-access-key
           - name: S3_SECRETKEY
             valueFrom:
               secretKeyRef:
                 name: {{ template "kubebackup.fullname" . }}-secret
-                key: s3SecretKey
+                key: s3-secret-key
+          - name: METRICSPORT
+            value: {{ .Values.metrics.port | quote }}
+          - name: INTERVAL
+            value: {{ .Values.settings.interval | quote }}
+          - name: RETENTION_PERIOD
+            value: {{ .Values.settings.retentionPeriod | quote }}
+          - name: LOG_LEVEL
+            value: {{ .Values.settings.logLevel | quote }}
         resources:
 {{ toYaml .Values.resources | indent 10 }}
     {{- if .Values.image.pullSecrets }}

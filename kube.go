@@ -24,11 +24,13 @@ func loadKubeConfig(kubeconfig string) (*rest.Config, error) {
 }
 
 func getNamespacedObjects(clientset *kubernetes.Clientset) ([]schema.GroupVersionResource, error) {
+	log.Infoln("Fetching namespaced API resources...")
 	apiResourceList, err := clientset.Discovery().ServerPreferredResources()
 	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
+		log.Errorf("Error fetching namespaced API resources: %v", err)
+		return nil, err
 	}
+	log.Debugln("API Resources: ", apiResourceList)
 
 	objects := make([]schema.GroupVersionResource, 0)
 	for _, apiResources := range apiResourceList {
@@ -39,6 +41,7 @@ func getNamespacedObjects(clientset *kubernetes.Clientset) ([]schema.GroupVersio
 			}
 		}
 	}
+	log.Debugln("Namespaced Objects: ", objects)
 	return objects, nil
 }
 
@@ -55,11 +58,12 @@ func getNamespaces(clientset *kubernetes.Clientset) ([]string, error) {
 }
 
 func processNamespace(clientset *kubernetes.Clientset, config *rest.Config, objects []schema.GroupVersionResource, namespace string, outputDir string) {
-	namespaceDir := filepath.Join(outputDir, "namespace", namespace)
+	log.Infof("Processing namespace: %s", namespace)
+	namespaceDir := filepath.Join(outputDir, "namespace-scoped", namespace)
 	os.MkdirAll(namespaceDir, 0755)
-	fmt.Printf("Namespace: %s\n", namespace)
 
 	dynamicClient := dynamic.NewForConfigOrDie(config)
+	log.Debugln("Dynamic Client: ", dynamicClient)
 
 	for _, object := range objects {
 		objectDir := filepath.Join(namespaceDir, object.Resource)
@@ -68,8 +72,8 @@ func processNamespace(clientset *kubernetes.Clientset, config *rest.Config, obje
 
 		unstructuredList, err := dynamicClient.Resource(object).Namespace(namespace).List(context.Background(), v1.ListOptions{})
 		if err != nil {
-			fmt.Println("Error:", err)
-			os.Exit(1)
+			log.Warnf("Error while listing objects for resource '%s' in namespace '%s': %v", object.Resource, namespace, err)
+			continue
 		}
 		for _, item := range unstructuredList.Items {
 			itemBytes, err := item.MarshalJSON()
@@ -107,7 +111,8 @@ func processNamespace(clientset *kubernetes.Clientset, config *rest.Config, obje
 }
 
 func processClusterScopedObjects(clientset *kubernetes.Clientset, config *rest.Config, outputDir string) {
-	clusterDir := filepath.Join(outputDir, "clusterobjects")
+	log.Infoln("Processing cluster-scoped objects...")
+	clusterDir := filepath.Join(outputDir, "cluster-scoped")
 	os.MkdirAll(clusterDir, 0755)
 
 	apiResourceList, err := clientset.Discovery().ServerPreferredResources()
