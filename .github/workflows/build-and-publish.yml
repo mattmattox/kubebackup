@@ -19,7 +19,9 @@ jobs:
           go-version: 1.20
 
       - name: Install dependencies
-        run: go mod download
+        run: |
+          go get -d -v ./...
+          go install -v ./...
 
       - name: Build Go script
         run: make build
