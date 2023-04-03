@@ -66,7 +66,7 @@ jobs:
         with:
           repository: SupportTools/helm-chart
           path: helm-chart
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.BOT_TOKEN }}
 
       - name: Configure Git
         run: |
