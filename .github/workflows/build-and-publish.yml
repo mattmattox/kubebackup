@@ -48,6 +48,8 @@ jobs:
           version: v3.7.1
 
       - name: Package Helm chart
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
           CHART_VERSION="0.1.${GITHUB_RUN_NUMBER}"
           APP_VERSION="0.1.${GITHUB_RUN_NUMBER}"
