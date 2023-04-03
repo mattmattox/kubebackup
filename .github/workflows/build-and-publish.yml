@@ -48,13 +48,17 @@ jobs:
           version: v3.7.1
 
       - name: Package Helm chart
-        env:
-          GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
-          CHART_VERSION="0.1.${GITHUB_RUN_NUMBER}"
-          APP_VERSION="0.1.${GITHUB_RUN_NUMBER}"
+          export CHART_VERSION="0.1.${{ github.run_number }}"
+          export APP_VERSION="0.1.${{ github.run_number }}"
+          echo "CHART_VERSION=${CHART_VERSION}"
+          echo "APP_VERSION=${APP_VERSION}"
           envsubst < helm/kubebackup/Chart.yaml.template > helm/kubebackup/Chart.yaml
           envsubst < helm/kubebackup/values.yaml.template > helm/kubebackup/values.yaml
+          echo "Chart.yaml:"
+          cat helm/kubebackup/Chart.yaml
+          echo "values.yaml:"
+          cat helm/kubebackup/values.yaml
           helm package helm/kubebackup --destination helm/repo
 
       - name: Checkout helm-chart repository
