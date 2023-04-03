@@ -1,4 +1,7 @@
-.PHONY: build test docker-build
+.PHONY: install build test run docker-build
+
+install:
+	go get -d -v ./...
 
 build:
 	go get -d -v ./...
