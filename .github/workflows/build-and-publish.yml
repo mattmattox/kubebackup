@@ -75,7 +75,7 @@ jobs:
 
       - name: Update Helm repository
         run: |
-          cp chart-output/*.tgz helm-chart/
+          cp helm/repo/kubebackup-*.tgz helm-chart/
           cd helm-chart
           helm repo index . --url https://charts.support.tools/
           git add .
