@@ -18,6 +18,8 @@ jobs:
         with:
           go-version: 1.20
           cache-dependency-path: go.sum
+
+      - name: Build
         run: |
           export GOPATH=$HOME/go
           export GOBIN=$(go env GOPATH)/bin
@@ -28,9 +30,7 @@ jobs:
           mkdir -p $GOPATH/src/github.com/mattmattox
           mv $(pwd)/* $GOPATH/src/github.com/mattmattox
           cd $GOPATH/src/github.com/$mattmattox
-
-      - name: Build
-        run: make build
+          make build
 
       #- name: GO Test
       #  run: make test
