@@ -30,7 +30,8 @@ jobs:
           mkdir -p $GOPATH/src/github.com/mattmattox
           mv $(pwd)/* $GOPATH/src/github.com/mattmattox
           cd $GOPATH/src/github.com/$mattmattox
-          make build
+          go install -v .
+          go build -v .
 
       #- name: GO Test
       #  run: make test
