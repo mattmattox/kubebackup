@@ -55,10 +55,6 @@ jobs:
           echo "APP_VERSION=${APP_VERSION}"
           envsubst < helm/kubebackup/Chart.yaml.template > helm/kubebackup/Chart.yaml
           envsubst < helm/kubebackup/values.yaml.template > helm/kubebackup/values.yaml
-          echo "Chart.yaml:"
-          cat helm/kubebackup/Chart.yaml
-          echo "values.yaml:"
-          cat helm/kubebackup/values.yaml
           helm package helm/kubebackup --destination helm/repo
 
       - name: Checkout helm-chart repository
