@@ -11,7 +11,6 @@ metadata:
     chart: {{ template "kubebackup.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
-    kubernetes.io/cluster-service: "true"
 {{- if .Values.labels }}
 {{ toYaml .Values.labels | indent 4 }}
 {{- end }}
@@ -19,24 +18,22 @@ spec:
   replicas: {{ .Values.replicaCount }}
   strategy:
     rollingUpdate:
-      maxSurge: 0
-      maxUnavailable: 1
-    type: RollingUpdate
+      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge | default 1 }}
+      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable | default 0 }}
+    type: {{ .Values.strategy.type | default "RollingUpdate" }}
   selector:
     matchLabels:
       app: {{ template "kubebackup.name" . }}
       release: {{ .Release.Name }}
-      kubernetes.io/cluster-service: "true"
   template:
     metadata:
-    {{- if .Values.podAnnotations }}
-      annotations:
-{{ toYaml .Values.podAnnotations | indent 8 }}
-    {{- end }}
       labels:
         app: {{ template "kubebackup.name" . }}
         release: {{ .Release.Name }}
-        kubernetes.io/cluster-service: "true"
+      {{- if .Values.podAnnotations }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+      {{- end }}
     spec:
       {{- if .Values.securityContext }}
       securityContext:
@@ -48,44 +45,19 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         env:
-          - name: S3_BUCKET
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "kubebackup.fullname" . }}-secret
-                key: s3-bucket
-          - name: S3_FOLDER
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "kubebackup.fullname" . }}-secret
-                key: s3-folder
-          - name: S3_REGION
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "kubebackup.fullname" . }}-secret
-                key: s3-region
-          - name: S3_ENDPOINT
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "kubebackup.fullname" . }}-secret
-                key: s3-endpoint
-          - name: S3_ACCESSKEY
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "kubebackup.fullname" . }}-secret
-                key:  s3-access-key
-          - name: S3_SECRETKEY
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "kubebackup.fullname" . }}-secret
-                key: s3-secret-key
-          - name: METRICSPORT
-            value: {{ .Values.metrics.port | quote }}
-          - name: INTERVAL
-            value: {{ .Values.settings.interval | quote }}
-          - name: RETENTION_PERIOD
-            value: {{ .Values.settings.retentionPeriod | quote }}
-          - name: LOG_LEVEL
-            value: {{ .Values.settings.logLevel | quote }}
+        {{- with .Values.env }}
+        {{- toYaml . | indent 10 }}
+        {{- end }}
+        envFrom:
+        {{- with .Values.envFrom }}
+        {{- range . }}
+        - {{ toYaml . | nindent 10 }}
+        {{- end }}
+        {{- end }}
+        ports:
+        - name: metrics
+          containerPort: {{ .Values.metrics.port | default 8080 }}
+          protocol: TCP
         resources:
 {{ toYaml .Values.resources | indent 10 }}
     {{- if .Values.image.pullSecrets }}

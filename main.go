@@ -1,242 +1,324 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"flag"
-	"io/ioutil"
+	"fmt"
 	"net/http"
 	"os"
-	"strconv"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
+	"github.com/mattmattox/kubebackup/pkg/backup"
+	"github.com/mattmattox/kubebackup/pkg/config"
+	"github.com/mattmattox/kubebackup/pkg/k8s"
+	"github.com/mattmattox/kubebackup/pkg/logging"
+	"github.com/mattmattox/kubebackup/pkg/version"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
+	"github.com/robfig/cron/v3"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
 var (
-	interval        int
-	retentionPeriod int
-	metricsport     int
-	log             = logrus.New()
-	kubeconfig      string
+	logger         = logging.SetupLogging()
+	taskLock       sync.Mutex
+	isTaskRunning  bool
+	lastBackupInfo = struct {
+		Status  string `json:"status"`
+		Message string `json:"message"`
+		Time    string `json:"time"`
+	}{
+		Status:  "unknown",
+		Message: "No backups have been run yet.",
+		Time:    "",
+	}
 
-	backupDuration = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "kubebackup_backup_duration_seconds",
-		Help: "Duration of the backup process in seconds.",
-	})
-
-	timeSinceLastBackup = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "kubebackup_time_since_last_backup_seconds",
-		Help: "Time since the last successful backup in seconds.",
-	})
-
-	backupSuccess = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "kubebackup_backup_success",
-		Help: "Indicates whether the last backup was successful (1) or not (0).",
-	})
-
-	objectCount = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "kubebackup_objects_count",
-		Help: "Number of objects backed up per object type.",
-	}, []string{"object_type"})
-
-	namespacesTotal = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "kubebackup_namespaces_total",
-		Help: "Total number of namespaces being backed up.",
-	})
+	// Prometheus Metrics
+	lastBackupStatus   = prometheus.NewGauge(prometheus.GaugeOpts{Name: "last_backup_status", Help: "The status of the last backup: 1 for success, 0 for failure."})
+	lastBackupTime     = prometheus.NewGauge(prometheus.GaugeOpts{Name: "last_backup_timestamp", Help: "Last successful backup timestamp."})
+	lastBackupDuration = prometheus.NewGauge(prometheus.GaugeOpts{Name: "last_backup_duration_seconds", Help: "Duration of the last backup in seconds."})
 )
 
 func init() {
-	flag.IntVar(&interval, "interval", 0, "Interval in hours between backups. Default is 12 hours.")
-
-	// Register Prometheus metrics
-	prometheus.MustRegister(backupDuration)
-	prometheus.MustRegister(timeSinceLastBackup)
-	prometheus.MustRegister(backupSuccess)
-	prometheus.MustRegister(objectCount)
-	prometheus.MustRegister(namespacesTotal)
+	// Register Prometheus Metrics
+	prometheus.MustRegister(lastBackupStatus, lastBackupTime, lastBackupDuration)
 }
 
 func main() {
-	flag.StringVar(&kubeconfig, "kubeconfig", "", "Path to kubeconfig file. (Optional, defaults to in-cluster config)")
-	s3Bucket := flag.String("s3-bucket", getEnv("S3_BUCKET", "my-bucket"), "S3 bucket to store backups")
-	s3Folder := flag.String("s3-folder", getEnv("S3_FOLDER", "my-cluster"), "S3 folder to store backups")
-	s3Region := flag.String("s3-region", getEnv("S3_REGION", "us-east-1"), "S3 region")
-	s3Endpoint := flag.String("s3-endpoint", getEnv("S3_ENDPOINT", ""), "S3 endpoint URL")
-	s3AccessKey := flag.String("s3-access-key", getEnv("S3_ACCESS_KEY", ""), "S3 access key")
-	s3SecretKey := flag.String("s3-secret-key", getEnv("S3_SECRET_KEY", ""), "S3 secret key")
+	flag.Parse() // Parse command-line flags
 
-	flag.Parse()
+	// Load configuration from environment variables
+	config.LoadConfiguration()
 
-	if metricsport == 0 {
-		metricsportEnv := os.Getenv("METRICSPORT")
-		if metricsportEnv != "" {
-			var err error
-			metricsport, err = strconv.Atoi(metricsportEnv)
-			if err != nil {
-				log.Fatalf("Error parsing METRICSPORT environment variable: %v", err)
-			}
-		} else {
-			metricsport = 9009
-		}
+	logging.SetupLogging()
+
+	// Validate configuration
+	if err := validateConfig(); err != nil {
+		logger.Fatalf("Configuration validation failed: %v", err)
 	}
 
-	if interval == 0 {
-		intervalEnv := os.Getenv("INTERVAL")
-		if intervalEnv != "" {
-			var err error
-			interval, err = strconv.Atoi(intervalEnv)
-			if err != nil {
-				log.Fatalf("Error parsing INTERVAL environment variable: %v", err)
-			}
-		} else {
-			interval = 12
-		}
-	}
-
-	if retentionPeriod == 0 {
-		retentionPeriodEnv := os.Getenv("RETENTION_PERIOD")
-		if retentionPeriodEnv != "" {
-			var err error
-			retentionPeriod, err = strconv.Atoi(retentionPeriodEnv)
-			if err != nil {
-				log.Fatalf("Error parsing RETENTION_PERIOD environment variable: %v", err)
-			}
-		} else {
-			retentionPeriod = 30
-		}
-	}
-
-	logLevel := getEnv("LOG_LEVEL", "info")
-	level, err := logrus.ParseLevel(logLevel)
+	// Connect to the Kubernetes cluster
+	clientset, dynamicClient, err := k8s.ConnectToCluster(config.CFG.Kubeconfig)
 	if err != nil {
-		log.Fatalf("Invalid log level: %v", err)
+		logger.Fatalf("Error creating clientset: %v", err)
 	}
-	log.SetLevel(level)
 
+	// Verify access to the cluster
+	err = k8s.VerifyAccessToCluster(clientset)
+	if err != nil {
+		logger.Fatalf("Error verifying access to cluster: %v", err)
+	}
+
+	// Start HTTP server for admin and metrics
+	logger.Println("Starting HTTP server for metrics and admin endpoints...")
+	server := startHTTPServer(clientset, dynamicClient)
+
+	// Context to handle shutdown signals
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Listen for OS signals
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+
+	// Handle RunOnce flag
+	if config.CFG.RunOnce {
+		logger.Println("RunOnce flag is enabled. Performing a single backup and exiting.")
+		performBackup(clientset, dynamicClient)
+		logger.Println("Task execution completed. Exiting...")
+		if err := server.Shutdown(context.Background()); err != nil {
+			logger.Printf("Error during server shutdown: %v", err)
+		}
+		return
+	}
+
+	// Handle DisableCron flag
+	if config.CFG.DisableCron {
+		logger.Println("Cron scheduling is disabled. Exiting.")
+		return
+	}
+
+	// Create and start a cron scheduler
+	c := cron.New()
+	_, err = c.AddFunc(config.CFG.CronSchedule, func() {
+		logger.Println("Starting scheduled backup...")
+		performBackup(clientset, dynamicClient)
+	})
+	if err != nil {
+		logger.Fatalf("Error adding cron job: %v", err)
+	}
+
+	logger.Println("Starting cron scheduler...")
+	c.Start()
+
+	// Wait for termination signals
 	go func() {
-		log.Debugln("Starting metrics server on port %s", metricsport)
-		http.Handle("/metrics", promhttp.Handler())
-		http.Handle("/", http.RedirectHandler("/metrics", http.StatusMovedPermanently))
-		http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("OK"))
-		})
-		http.ListenAndServe(":"+strconv.Itoa(metricsport), nil)
+		<-signalChan
+		logger.Println("Received shutdown signal, stopping cron scheduler...")
+		c.Stop()
+		cancel()
 	}()
 
-	for {
-		log.Infoln("Starting backup process...")
+	// Wait for the context to be canceled
+	<-ctx.Done()
 
-		log.Infoln("Creating temporary directory for backup...")
-		tmpDir, err := ioutil.TempDir("", "kubebackup-")
-		if err != nil {
-			log.Fatalf("Error creating temporary directory: %v", err)
+	logger.Println("Exiting gracefully.")
+}
+
+// validateConfig ensures required fields are set in the configuration.
+func validateConfig() error {
+	if config.CFG.CronSchedule == "" {
+		return fmt.Errorf("CronSchedule cannot be empty")
+	}
+	if config.CFG.BackupTarget == "s3" {
+		if config.CFG.S3AccessKeyID == "" || config.CFG.S3SecretAccessKey == "" {
+			return fmt.Errorf("S3 configuration is incomplete: missing AccessKeyID or SecretAccessKey")
 		}
-		log.Infof("Temporary directory created successfully at path: %s\n", tmpDir)
+		if config.CFG.S3Bucket == "" {
+			return fmt.Errorf("S3 configuration is incomplete: missing Bucket")
+		}
+	}
+	return nil
+}
+
+// performBackup triggers the backup process and updates metrics/status.
+func performBackup(clientset *kubernetes.Clientset, dynamicClient dynamic.Interface) {
+	startTime := time.Now()
+
+	status, err := backup.StartBackup(clientset, dynamicClient, &config.CFG)
+	duration := time.Since(startTime)
+
+	if err != nil {
+		logger.Printf("Backup failed: %v", err)
+		lastBackupInfo = struct {
+			Status  string `json:"status"`
+			Message string `json:"message"`
+			Time    string `json:"time"`
+		}{
+			Status:  "failed",
+			Message: err.Error(),
+			Time:    startTime.Format(time.RFC3339),
+		}
+		lastBackupStatus.Set(0)
+		return
+	}
+
+	if status {
+		logger.Printf("Backup completed successfully in %v", duration)
+		lastBackupInfo = struct {
+			Status  string `json:"status"`
+			Message string `json:"message"`
+			Time    string `json:"time"`
+		}{
+			Status:  "success",
+			Message: "Backup completed successfully.",
+			Time:    startTime.Format(time.RFC3339),
+		}
+		lastBackupStatus.Set(1)
+		lastBackupTime.Set(float64(startTime.Unix()))
+		lastBackupDuration.Set(duration.Seconds())
+	} else {
+		logger.Printf("Backup completed with errors in %v", duration)
+		lastBackupInfo = struct {
+			Status  string `json:"status"`
+			Message string `json:"message"`
+			Time    string `json:"time"`
+		}{
+			Status:  "failed",
+			Message: "Backup completed with errors.",
+			Time:    startTime.Format(time.RFC3339),
+		}
+		lastBackupStatus.Set(0)
+	}
+}
+
+// startHTTPServer starts an HTTP server for metrics and admin endpoints
+func startHTTPServer(clientset *kubernetes.Clientset, dynamicClient dynamic.Interface) *http.Server {
+	logger.Println("Setting up HTTP server...")
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", defaultPage)
+	mux.Handle("/metrics", promhttp.Handler())
+	mux.HandleFunc("/healthz", healthCheck)
+	mux.HandleFunc("/version", versionInfo)
+	mux.HandleFunc("/backup", func(w http.ResponseWriter, r *http.Request) {
+		logger.Printf("HTTP request to /backup from %s", r.RemoteAddr)
+		if triggerAPITask(w, clientset, dynamicClient, "backup") {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, "Backup triggered successfully at %s.\n", time.Now().Format(time.RFC3339))
+		}
+	})
+	mux.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
+		logger.Printf("HTTP request to /status from %s", r.RemoteAddr)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(lastBackupInfo)
+	})
+
+	server := &http.Server{
+		Addr:         fmt.Sprintf(":%d", config.CFG.MetricsPort),
+		Handler:      logRequestMiddleware(mux),
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  30 * time.Second,
+	}
+
+	go func() {
+		logger.Printf("HTTP server running on port %d", config.CFG.MetricsPort)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Fatalf("HTTP server failed: %v", err)
+		}
+	}()
+	return server
+}
+
+// defaultPage returns a simple HTML page with links to various endpoints
+func defaultPage(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprint(w, `
+		<!DOCTYPE html>
+		<html>
+		<head><title>KubeBackup</title></head>
+		<body>
+			<h1>KubeBackup</h1>
+			<ul>
+				<li><a href="/metrics">Metrics</a></li>
+				<li><a href="/healthz">Health Check</a></li>
+				<li><a href="/version">Version</a></li>
+				<li><a href="/backup">Trigger Backup</a></li>
+			</ul>
+		</body>
+		</html>
+	`)
+}
+
+// healthCheck returns a simple health check response
+func healthCheck(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "ok")
+}
+
+// versionInfo returns the version information of the application
+func versionInfo(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(map[string]string{
+		"version":   version.Version,
+		"gitCommit": version.GitCommit,
+		"buildTime": version.BuildTime,
+	})
+	if err != nil {
+		logger.Printf("Failed to encode version info: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+}
+
+// logRequestMiddleware logs incoming HTTP requests
+func logRequestMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.Printf("Incoming request: %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
+		next.ServeHTTP(w, r)
+	})
+}
+
+// triggerAPITask triggers a task based on the mode and returns true if the task was started
+func triggerAPITask(w http.ResponseWriter, clientset *kubernetes.Clientset, dynamicClient dynamic.Interface, mode string) bool {
+	taskLock.Lock()
+	defer taskLock.Unlock()
+
+	if isTaskRunning {
+		logger.Printf("Task already running; skipping %s request.", mode)
+		http.Error(w, "Another task is already running", http.StatusConflict)
+		return false
+	}
+
+	isTaskRunning = true
+	go func() {
+		defer func() {
+			taskLock.Lock()
+			isTaskRunning = false
+			taskLock.Unlock()
+			logger.Printf("Task for mode %s completed.", mode)
+		}()
 
 		startTime := time.Now()
-		success := backup(kubeconfig, tmpDir, *s3Bucket, *s3Folder, *s3Region, *s3AccessKey, *s3SecretKey, *s3Endpoint)
-		duration := time.Since(startTime).Seconds()
+		logger.Printf("Starting %s task...", mode)
 
-		backupDuration.Set(duration)
-		timeSinceLastBackup.Set(0)
-		if success {
-			backupSuccess.Set(1)
-			log.Infoln("Backup completed successfully!")
-		} else {
-			backupSuccess.Set(0)
-			cleanupTmpDir(tmpDir)
-			log.Fatalf("Backup failed!")
+		switch mode {
+		case "backup":
+			performBackup(clientset, dynamicClient)
+		default:
+			logger.Printf("Invalid task mode: %s", mode)
+			http.Error(w, "Invalid task mode", http.StatusBadRequest)
 		}
 
-		log.Infof("Backup duration: %f seconds", duration)
-
-		log.Infoln("Cleaning up temporary directory...")
-		cleanupTmpDir(tmpDir)
-
-		log.Infof("Waiting for %d hours before the next backup...\n", interval)
-		time.Sleep(time.Duration(interval) * time.Hour)
-
-		// Update time since last backup metric
-		timeSinceLastBackup.Inc()
-	}
-}
-
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
-
-func backup(kubeconfig, tmpDir, s3Bucket, s3Folder, s3Region, s3AccessKey, s3SecretKey, s3Endpoint string) bool {
-	log.Infoln("Loading Kubernetes config...")
-	config, err := loadKubeConfig(kubeconfig)
-	if err != nil {
-		log.Printf("Error loading kubeconfig: %v", err)
-		return false
-	}
-
-	log.Infoln("Creating Kubernetes clientset...")
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		log.Printf("Error creating clientset: %v", err)
-		return false
-	}
-
-	log.Infoln("Fetching namespaced resources...")
-	namespacedResources, err := getNamespacedObjects(clientset)
-	if err != nil {
-		log.Printf("Error fetching namespaced resources: %v", err)
-		return false
-	}
-
-	log.Infoln("Fetching namespaces...")
-	namespaces, err := getNamespaces(clientset)
-	if err != nil {
-		log.Printf("Error fetching namespaces: %v", err)
-		return false
-	}
-
-	log.Infof("Found %d namespaces", len(namespaces))
-
-	// Update the number of namespaces metric
-	namespacesTotal.Set(float64(len(namespaces)))
-
-	for _, ns := range namespaces {
-		processNamespace(clientset, config, namespacedResources, ns, tmpDir)
-	}
-
-	processClusterScopedObjects(clientset, config, tmpDir)
-
-	err = compressAndUploadToS3(tmpDir, s3Bucket, s3Folder, s3Region, s3AccessKey, s3SecretKey, s3Endpoint)
-	if err != nil {
-		log.Printf("Error compressing and uploading to S3: %v", err)
-		return false
-	}
-
-	sess, err := createS3Session(s3Region, s3AccessKey, s3SecretKey, s3Endpoint)
-	if err != nil {
-		log.Printf("Error creating S3 session: %v", err)
-		return false
-	}
-
-	err = cleanupOldBackups(sess, s3Bucket, s3Folder, retentionPeriod)
-	if err != nil {
-		log.Printf("Error deleting old backups: %v", err)
-		return false
-	}
+		duration := time.Since(startTime)
+		logger.Printf("%s task completed in %v", mode, duration)
+	}()
 
 	return true
-}
-
-func cleanupTmpDir(tmpDir string) {
-	log.Infof("Cleaning up temporary directory %s...", tmpDir)
-	if err := os.RemoveAll(tmpDir); err != nil {
-		log.Errorf("Error cleaning up temporary directory %s: %v", tmpDir, err)
-	} else {
-		log.Infof("Temporary directory %s cleaned up successfully", tmpDir)
-	}
 }

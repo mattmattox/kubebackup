@@ -43,13 +43,26 @@ Namespaced objects are grouped by namespace and saved in the `namespace-scoped/<
 ## Configuration
 The following table lists the configurable parameters of the KubeBackup chart and their default values.
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `image.repository` | Image repository | `cube8021/kubebackup` |
-| `image.tag` | Image tag | `v1.1.0` |
-| `image.pullPolicy` | Image pull policy | `IfNotPresent` |
-| `s3.region` | AWS Region | `us-east-2` |
-| `s3.bucket` | S3 Bucket | `kubebackup` |
+## Environment Variables
+
+| Environment Variable       | Description                                             | Default Value       |
+|----------------------------|---------------------------------------------------------|---------------------|
+| `DEBUG`                    | Enable debug mode                                       | `false`             |
+| `LOG_LEVEL`                | Logging level (e.g., `info`, `debug`)                  | `info`              |
+| `KUBECONFIG`               | Path to Kubernetes config                               | `~/.kube/config`    |
+| `BACKUP_DIR`               | Directory for storing backups temporarily               | `/tmp`              |
+| `BACKUP_INTERVAL`          | Backup interval in seconds                              | `12`                |
+| `RETENTION`                | Retention period in days for backups in S3             | `30`                |
+| `S3_BUCKET`                | S3 bucket name                                          |                     |
+| `S3_FOLDER`                | Folder path within the S3 bucket                        |                     |
+| `S3_ACCESS_KEY_ID`         | S3 access key                                           |                     |
+| `S3_SECRET_ACCESS_KEY`     | S3 secret key                                           |                     |
+| `S3_REGION`                | S3 region                                              |                     |
+| `S3_ENDPOINT`              | Custom S3 endpoint                                      |                     |
+| `S3_DISABLE_SSL`           | Disable SSL verification (`true` or `false`)            | `false`             |
+| `S3_CUSTOM_CA_PATH`        | Path to custom CA certificate file                     |                     |
+| `METRICS_PORT`             | Metrics server port                                     | `9000`              |
+
 
 ## Building the script from source
 To build the script from source, you will need to have the following installed:
